@@ -291,8 +291,9 @@ class Parser {
 		$wrapper->setAttribute( 'class', "whatsapp-block" );
 
 		$title = $this->dom->createElement( 'span', $block->data->title );
-
+		$title->setAttribute( 'class', 'whatsapp-warning-header' );
 		$content = $this->dom->createElement( 'span', $block->data->content);
+		$content->setAttribute( 'class', 'whatsapp-text' );
 
 		$wrapper->appendChild( $title );
 		$wrapper->appendChild( $content );
