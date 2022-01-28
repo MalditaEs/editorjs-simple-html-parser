@@ -118,6 +118,8 @@ class Parser {
 				case 'image':
 					$this->parseFileImage( $block );
 					break;
+				case 'whatsapp':
+					$this->parseWhatsapp( $block );
 				default:
 					break;
 			}
@@ -279,6 +281,21 @@ class Parser {
 		$wrapper->setAttribute( 'class', "{$this->prefix}-raw" );
 
 		$wrapper->appendChild( $this->html5->loadHTMLFragment( $block->data->html ) );
+
+		$this->dom->appendChild( $wrapper );
+	}
+
+	private function parseWhatsapp( $block ) {
+		$wrapper = $this->dom->createElement( 'div' );
+
+		$wrapper->setAttribute( 'class', "whatsapp-block" );
+
+		$title = $this->dom->createElement( 'span', $block->data->title );
+
+		$content = $this->dom->createElement( 'span', $block->data->content);
+
+		$wrapper->appendChild( $title );
+		$wrapper->appendChild( $content );
 
 		$this->dom->appendChild( $wrapper );
 	}
