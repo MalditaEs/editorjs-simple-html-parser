@@ -389,6 +389,22 @@ class Parser {
 	}
 
 	private function parseFileImage( $block ) {
+
+		$alignmentWrap = $this->dom->createElement( 'div' );
+
+		switch ($block->tunes->alignment->alignment){
+			case 'center':
+				$alignmentWrap->setAttribute( 'class', "flex justify-center" );
+				break;
+			case 'left':
+				$alignmentWrap->setAttribute( 'class', "flex justify-start" );
+				break;
+			case 'right':
+				$alignmentWrap->setAttribute( 'class', "flex justify-end" );
+				break;
+			default:
+		}
+
 		$figure = $this->dom->createElement( 'figure' );
 
 		$figure->setAttribute( 'class', "{$this->prefix}-image" );
@@ -418,6 +434,7 @@ class Parser {
 			$figure->appendChild( $figCaption );
 		}
 
-		$this->dom->appendChild( $figure );
+		$alignmentWrap->appendChild( $figure );
+		$this->dom->appendChild( $alignmentWrap );
 	}
 }
