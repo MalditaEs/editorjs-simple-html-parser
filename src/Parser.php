@@ -120,6 +120,8 @@ class Parser {
 					break;
 				case 'whatsapp':
 					$this->parseWhatsapp( $block );
+				case 'twitterembed':
+					$this->parseTwitterEmbed( $block );
 				default:
 					break;
 			}
@@ -261,6 +263,17 @@ class Parser {
 
 				break;
 		}
+
+		$this->dom->appendChild( $wrapper );
+	}
+
+	private function parseTwitterEmbed( $block ) {
+		$wrapper = $this->dom->createElement( 'div' );
+
+		$wrapper->setAttribute( 'class', "{$this->prefix}-embed twitter-embed" );
+
+		$baseCode = $block->data->embed . '<script async defer src="https://platform.twitter.com/widgets.js" charset="utf-8"></script>';
+		$wrapper->appendChild( $this->html5->loadHTMLFragment( $baseCode ) );
 
 		$this->dom->appendChild( $wrapper );
 	}
