@@ -8,446 +8,490 @@ use Exception;
 use Masterminds\HTML5;
 use StdClass;
 
-class Parser {
-	/**
-	 * @var StdClass
-	 */
-	private $data;
-
-	/**
-	 * @var DOMDocument
-	 */
-	private $dom;
-
-	/**
-	 * @var HTML5
-	 */
-	private $html5;
-
-	/**
-	 * @var string
-	 */
-	private $prefix = "prs";
-
-	public function __construct( string $data ) {
-		$this->data = json_decode( $data );
-
-		$this->dom = new DOMDocument( 1.0, 'UTF-8' );
-
-		$this->html5 = new HTML5( [
-			'target_document' => $this->dom,
-			'disable_html_ns' => true
-		] );
-	}
-
-	static function parse( $data ) {
-		return new self( $data );
-	}
-
-	/**
-	 * @return string
-	 */
-	public function getPrefix(): string {
-		return $this->prefix;
-	}
-
-	/**
-	 * @param string $prefix
-	 */
-	public function setPrefix( string $prefix ): void {
-		$this->prefix = $prefix;
-	}
-
-	public function getTime() {
-		return isset( $this->data->time ) ? $this->data->time : null;
-	}
-
-	public function getVersion() {
-		return isset( $this->data->version ) ? $this->data->version : null;
-	}
-
-	public function getBlocks() {
-		return isset( $this->data->blocks ) ? $this->data->blocks : null;
-	}
-
-	public function toHtml() {
-		$this->init();
-
-		return $this->dom->saveHTML();
-	}
-
-	/**
-	 * @throws Exception
-	 */
-	private function init() {
-		if ( ! $this->hasBlocks() ) {
-			throw new Exception( 'No Blocks to parse !' );
-		}
-		foreach ( $this->data->blocks as $block ) {
-			switch ( $block->type ) {
-				case 'header':
-					$this->parseHeader( $block );
-					break;
-				case 'delimiter':
-					$this->parseDelimiter();
-					break;
-				case 'code':
-					$this->parseCode( $block );
-					break;
-				case 'paragraph':
-					$this->parseParagraph( $block );
-					break;
-				case 'link':
-					$this->parseLink( $block );
-					break;
-				case 'embed':
-					$this->parseEmbed( $block );
-					break;
-				case 'raw':
-					$this->parseRaw( $block );
-					break;
-				case 'list':
-					$this->parseList( $block );
-					break;
-				case 'warning':
-					$this->parseWarning( $block );
-					break;
-				case 'simpleImage':
-					$this->parseImage( $block );
-					break;
-				case 'image':
-					$this->parseFileImage( $block );
-					break;
-				case 'whatsapp':
-					$this->parseWhatsapp( $block );
-				case 'twitterembed':
-					$this->parseTwitterEmbed( $block );
-				default:
-					break;
-			}
-		}
-	}
+class Parser
+{
+    /**
+     * @var StdClass
+     */
+    private $data;
+
+    /**
+     * @var DOMDocument
+     */
+    private $dom;
+
+    /**
+     * @var HTML5
+     */
+    private $html5;
+
+    /**
+     * @var string
+     */
+    private $prefix = "prs";
+
+    public function __construct(string $data)
+    {
+        $this->data = json_decode($data);
+
+        $this->dom = new DOMDocument(1.0, 'UTF-8');
+
+        $this->html5 = new HTML5([
+            'target_document' => $this->dom,
+            'disable_html_ns' => true
+        ]);
+    }
+
+    static function parse($data)
+    {
+        return new self($data);
+    }
+
+    /**
+     * @return string
+     */
+    public function getPrefix(): string
+    {
+        return $this->prefix;
+    }
+
+    /**
+     * @param string $prefix
+     */
+    public function setPrefix(string $prefix): void
+    {
+        $this->prefix = $prefix;
+    }
+
+    public function getTime()
+    {
+        return isset($this->data->time) ? $this->data->time : null;
+    }
+
+    public function getVersion()
+    {
+        return isset($this->data->version) ? $this->data->version : null;
+    }
+
+    public function getBlocks()
+    {
+        return isset($this->data->blocks) ? $this->data->blocks : null;
+    }
+
+    public function toHtml()
+    {
+        $this->init();
+
+        return $this->dom->saveHTML();
+    }
+
+    /**
+     * @throws Exception
+     */
+    private function init()
+    {
+        if (!$this->hasBlocks()) {
+            throw new Exception('No Blocks to parse !');
+        }
+        foreach ($this->data->blocks as $block) {
+            switch ($block->type) {
+                case 'header':
+                    $this->parseHeader($block);
+                    break;
+                case 'delimiter':
+                    $this->parseDelimiter();
+                    break;
+                case 'code':
+                    $this->parseCode($block);
+                    break;
+                case 'paragraph':
+                    $this->parseParagraph($block);
+                    break;
+                case 'link':
+                    $this->parseLink($block);
+                    break;
+                case 'embed':
+                    $this->parseEmbed($block);
+                    break;
+                case 'raw':
+                    $this->parseRaw($block);
+                    break;
+                case 'list':
+                    $this->parseList($block);
+                    break;
+                case 'warning':
+                    $this->parseWarning($block);
+                    break;
+                case 'simpleImage':
+                    $this->parseImage($block);
+                    break;
+                case 'image':
+                    $this->parseFileImage($block);
+                    break;
+                case 'whatsapp':
+                    $this->parseWhatsapp($block);
+                case 'twitterembed':
+                    $this->parseTwitterEmbed($block);
+                case 'pdf':
+                    $this->parsePdf($block);
+                default:
+                    break;
+            }
+        }
+    }
+
+    private function hasBlocks()
+    {
+        return count($this->data->blocks) !== 0;
+    }
+
+    private function parseHeader($block)
+    {
+        $text = new DOMText($block->data->text);
+
+        $header = $this->dom->createElement('h' . $block->data->level);
+
+        $header->setAttribute('class', "{$this->prefix}-h{$block->data->level}");
+
+        $header->appendChild($text);
+
+        $this->dom->appendChild($header);
+    }
+
+    private function parseDelimiter()
+    {
+        $node = $this->dom->createElement('hr');
+
+        $node->setAttribute('class', "{$this->prefix}-delimiter");
+
+        $this->dom->appendChild($node);
+    }
+
+    private function parseCode($block)
+    {
+        $wrapper = $this->dom->createElement('div');
+
+        $wrapper->setAttribute('class', "{$this->prefix}-code");
+
+        $pre = $this->dom->createElement('pre');
+
+        $code = $this->dom->createElement('code');
+
+        $content = new DOMText($block->data->code);
+
+        $code->appendChild($content);
+
+        $pre->appendChild($code);
+
+        $wrapper->appendChild($pre);
+
+        $this->dom->appendChild($wrapper);
+    }
+
+    private function parseParagraph($block)
+    {
+        $node = $this->dom->createElement('p');
+
+        $node->setAttribute('class', "{$this->prefix}-paragraph");
+
+        $node->appendChild($this->html5->loadHTMLFragment($block->data->text));
+
+        $this->dom->appendChild($node);
+    }
+
+    private function parseLink($block)
+    {
+        $link = $this->dom->createElement('a');
+
+        $link->setAttribute('href', $block->data->link);
+        $link->setAttribute('target', '_blank');
+        $link->setAttribute('class', "{$this->prefix}-link");
+
+        $innerContainer = $this->dom->createElement('div');
+        $innerContainer->setAttribute('class', "{$this->prefix}-link-container");
+
+        $hasTitle = isset($block->data->meta->title);
+        $hasDescription = isset($block->data->meta->description);
+        $hasImage = isset($block->data->meta->image);
+
+        if ($hasTitle) {
+            $titleNode = $this->dom->createElement('div');
+            $titleNode->setAttribute('class', "{$this->prefix}-link-title");
+            $titleText = new DOMText($block->data->meta->title);
+            $titleNode->appendChild($titleText);
+            $innerContainer->appendChild($titleNode);
+        }
+
+        if ($hasDescription) {
+            $descriptionNode = $this->dom->createElement('div');
+            $descriptionNode->setAttribute('class', "{$this->prefix}-link-description");
+            $descriptionText = new DOMText($block->data->meta->description);
+            $descriptionNode->appendChild($descriptionText);
+            $innerContainer->appendChild($descriptionNode);
+        }
+
+        $linkContainer = $this->dom->createElement('div');
+        $linkContainer->setAttribute('class', "{$this->prefix}-link-url");
+        $linkText = new DOMText($block->data->link);
+        $linkContainer->appendChild($linkText);
+        $innerContainer->appendChild($linkContainer);
 
-	private function hasBlocks() {
-		return count( $this->data->blocks ) !== 0;
-	}
+        $link->appendChild($innerContainer);
 
-	private function parseHeader( $block ) {
-		$text = new DOMText( $block->data->text );
+        if ($hasImage) {
+            $imageContainer = $this->dom->createElement('div');
+            $imageContainer->setAttribute('class', "{$this->prefix}-link-img-container");
+            $image = $this->dom->createElement('img');
+            $image->setAttribute('src', $block->data->meta->image->url);
+            $imageContainer->appendChild($image);
+            $link->appendChild($imageContainer);
+            $innerContainer->setAttribute('class', "{$this->prefix}-link-container-with-img");
+        }
 
-		$header = $this->dom->createElement( 'h' . $block->data->level );
+        $this->dom->appendChild($link);
+    }
 
-		$header->setAttribute( 'class', "{$this->prefix}-h{$block->data->level}" );
+    private function parseEmbed($block)
+    {
+        $wrapper = $this->dom->createElement('div');
 
-		$header->appendChild( $text );
+        $wrapper->setAttribute('class', "{$this->prefix}-embed {$block->data->service}-embed");
 
-		$this->dom->appendChild( $header );
-	}
+        switch ($block->data->service) {
+            case 'youtube':
 
-	private function parseDelimiter() {
-		$node = $this->dom->createElement( 'hr' );
+                $attrs = [
+                    'height' => $block->data->height,
+                    'src' => $block->data->embed,
+                    'allow' => 'accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture',
+                    'allowfullscreen' => true,
+                    'class' => 'youtube-video'
+                ];
 
-		$node->setAttribute( 'class', "{$this->prefix}-delimiter" );
+                $wrapper->appendChild($this->createIframe($attrs));
 
-		$this->dom->appendChild( $node );
-	}
+                break;
+            case 'codepen' || 'gfycat':
 
-	private function parseCode( $block ) {
-		$wrapper = $this->dom->createElement( 'div' );
+                $attrs = [
+                    'height' => $block->data->height,
+                    'src' => $block->data->embed,
+                ];
 
-		$wrapper->setAttribute( 'class', "{$this->prefix}-code" );
+                $wrapper->appendChild($this->createIframe($attrs));
 
-		$pre = $this->dom->createElement( 'pre' );
+                break;
+        }
 
-		$code = $this->dom->createElement( 'code' );
+        $this->dom->appendChild($wrapper);
+    }
 
-		$content = new DOMText( $block->data->code );
+    private function parseTwitterEmbed($block)
+    {
+        $wrapper = $this->dom->createElement('div');
 
-		$code->appendChild( $content );
+        $wrapper->setAttribute('class', "{$this->prefix}-embed twitter-embed");
 
-		$pre->appendChild( $code );
+        $baseCode = $block->data->embed . '<script async defer src="https://platform.twitter.com/widgets.js" charset="utf-8"></script>';
+        $wrapper->appendChild($this->html5->loadHTMLFragment($baseCode));
 
-		$wrapper->appendChild( $pre );
+        $this->dom->appendChild($wrapper);
+    }
 
-		$this->dom->appendChild( $wrapper );
-	}
+    private function parsePdf($block)
+    {
+        $wrapper = $this->dom->createElement('div');
+        $wrapper->setAttribute('class', "pdf-embed my-4");
 
-	private function parseParagraph( $block ) {
-		$node = $this->dom->createElement( 'p' );
+        $baseCode = "<object data={$block->data->url}#toolbar=0&statusbar=0&messages=0&navpanes=0' 
+                                            type='application/pdf' 
+                                            width='100%' 
+                                            height='600px'>
+                                            <p>Este navegador no soporta mostrar archivos PDF. : <a href='{$block->data->url}#toolbar=0&statusbar=0&messages=0&navpanes=0'>Descárgalo para poder verlo.</a></p></object>";
 
-		$node->setAttribute( 'class', "{$this->prefix}-paragraph" );
+        $wrapper->appendChild($this->html5->loadHTMLFragment($baseCode));
 
-		$node->appendChild( $this->html5->loadHTMLFragment( $block->data->text ) );
+        $this->dom->appendChild($wrapper);
+    }
 
-		$this->dom->appendChild( $node );
-	}
 
-	private function parseLink( $block ) {
-		$link = $this->dom->createElement( 'a' );
+    private function createIframe(array $attrs)
+    {
+        $iframe = $this->dom->createElement('iframe');
 
-		$link->setAttribute( 'href', $block->data->link );
-		$link->setAttribute( 'target', '_blank' );
-		$link->setAttribute( 'class', "{$this->prefix}-link" );
+        foreach ($attrs as $key => $attr) {
+            $iframe->setAttribute($key, $attr);
+        }
 
-		$innerContainer = $this->dom->createElement( 'div' );
-		$innerContainer->setAttribute( 'class', "{$this->prefix}-link-container" );
+        return $iframe;
+    }
 
-		$hasTitle       = isset( $block->data->meta->title );
-		$hasDescription = isset( $block->data->meta->description );
-		$hasImage       = isset( $block->data->meta->image );
+    private function parseRaw($block)
+    {
+        $wrapper = $this->dom->createElement('div');
 
-		if ( $hasTitle ) {
-			$titleNode = $this->dom->createElement( 'div' );
-			$titleNode->setAttribute( 'class', "{$this->prefix}-link-title" );
-			$titleText = new DOMText( $block->data->meta->title );
-			$titleNode->appendChild( $titleText );
-			$innerContainer->appendChild( $titleNode );
-		}
+        $wrapper->setAttribute('class', "{$this->prefix}-raw");
 
-		if ( $hasDescription ) {
-			$descriptionNode = $this->dom->createElement( 'div' );
-			$descriptionNode->setAttribute( 'class', "{$this->prefix}-link-description" );
-			$descriptionText = new DOMText( $block->data->meta->description );
-			$descriptionNode->appendChild( $descriptionText );
-			$innerContainer->appendChild( $descriptionNode );
-		}
+        $wrapper->appendChild($this->html5->loadHTMLFragment($block->data->html));
 
-		$linkContainer = $this->dom->createElement( 'div' );
-		$linkContainer->setAttribute( 'class', "{$this->prefix}-link-url" );
-		$linkText = new DOMText( $block->data->link );
-		$linkContainer->appendChild( $linkText );
-		$innerContainer->appendChild( $linkContainer );
+        $this->dom->appendChild($wrapper);
+    }
 
-		$link->appendChild( $innerContainer );
+    private function parseWhatsapp($block)
+    {
+        $wrapper = $this->dom->createElement('div');
 
-		if ( $hasImage ) {
-			$imageContainer = $this->dom->createElement( 'div' );
-			$imageContainer->setAttribute( 'class', "{$this->prefix}-link-img-container" );
-			$image = $this->dom->createElement( 'img' );
-			$image->setAttribute( 'src', $block->data->meta->image->url );
-			$imageContainer->appendChild( $image );
-			$link->appendChild( $imageContainer );
-			$innerContainer->setAttribute( 'class', "{$this->prefix}-link-container-with-img" );
-		}
+        $wrapper->setAttribute('class', "whatsapp-block");
 
-		$this->dom->appendChild( $link );
-	}
+        $title = $this->dom->createElement('span', $block->data->title);
+        $title->setAttribute('class', 'whatsapp-warning-header');
+        $content = $this->dom->createElement('span', $block->data->content);
+        $content->setAttribute('class', 'whatsapp-text');
 
-	private function parseEmbed( $block ) {
-		$wrapper = $this->dom->createElement( 'div' );
+        $wrapper->appendChild($title);
+        $wrapper->appendChild($content);
 
-		$wrapper->setAttribute( 'class', "{$this->prefix}-embed {$block->data->service}-embed" );
+        $this->dom->appendChild($wrapper);
+    }
 
-		switch ( $block->data->service ) {
-			case 'youtube':
+    private function parseList($block)
+    {
+        $wrapper = $this->dom->createElement('div');
+        $wrapper->setAttribute('class', "{$this->prefix}-list");
 
-				$attrs = [
-					'height'          => $block->data->height,
-					'src'             => $block->data->embed,
-					'allow'           => 'accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture',
-					'allowfullscreen' => true,
-					'class'           => 'youtube-video'
-				];
+        $list = null;
 
-				$wrapper->appendChild( $this->createIframe( $attrs ) );
+        switch ($block->data->style) {
+            case 'ordered':
+                $list = $this->dom->createElement('ol');
+                break;
+            default:
+                $list = $this->dom->createElement('ul');
+                break;
+        }
 
-				break;
-			case 'codepen' || 'gfycat':
+        foreach ($block->data->items as $item) {
+            $li = $this->dom->createElement('li');
+            $li->appendChild($this->html5->loadHTMLFragment($item));
+            $list->appendChild($li);
+        }
 
-				$attrs = [
-					'height' => $block->data->height,
-					'src'    => $block->data->embed,
-				];
+        $wrapper->appendChild($list);
 
-				$wrapper->appendChild( $this->createIframe( $attrs ) );
+        $this->dom->appendChild($wrapper);
+    }
 
-				break;
-		}
+    private function parseWarning($block)
+    {
+        $title = new DOMText($block->data->title);
+        $message = new DOMText($block->data->message);
 
-		$this->dom->appendChild( $wrapper );
-	}
+        $wrapper = $this->dom->createElement('div');
+        $wrapper->setAttribute('class', "{$this->prefix}-warning");
 
-	private function parseTwitterEmbed( $block ) {
-		$wrapper = $this->dom->createElement( 'div' );
+        $textWrapper = $this->dom->createElement('div');
+        $titleWrapper = $this->dom->createElement('p');
 
-		$wrapper->setAttribute( 'class', "{$this->prefix}-embed twitter-embed" );
+        $titleWrapper->appendChild($title);
+        $messageWrapper = $this->dom->createElement('p');
 
-		$baseCode = $block->data->embed . '<script async defer src="https://platform.twitter.com/widgets.js" charset="utf-8"></script>';
-		$wrapper->appendChild( $this->html5->loadHTMLFragment( $baseCode ) );
+        $messageWrapper->appendChild($message);
 
-		$this->dom->appendChild( $wrapper );
-	}
+        $textWrapper->appendChild($titleWrapper);
+        $textWrapper->appendChild($messageWrapper);
 
-	private function createIframe( array $attrs ) {
-		$iframe = $this->dom->createElement( 'iframe' );
+        $icon = $this->dom->createElement('ion-icon');
+        $icon->setAttribute('name', 'information-outline');
+        $icon->setAttribute('size', 'large');
 
-		foreach ( $attrs as $key => $attr ) {
-			$iframe->setAttribute( $key, $attr );
-		}
+        $wrapper->appendChild($icon);
+        $wrapper->appendChild($textWrapper);
 
-		return $iframe;
-	}
+        $this->dom->appendChild($wrapper);
+    }
 
-	private function parseRaw( $block ) {
-		$wrapper = $this->dom->createElement( 'div' );
+    private function parseImage($block)
+    {
+        $figure = $this->dom->createElement('figure');
 
-		$wrapper->setAttribute( 'class', "{$this->prefix}-raw" );
+        $figure->setAttribute('class', "{$this->prefix}-image");
 
-		$wrapper->appendChild( $this->html5->loadHTMLFragment( $block->data->html ) );
+        $img = $this->dom->createElement('img');
 
-		$this->dom->appendChild( $wrapper );
-	}
+        $imgAttrs = [];
 
-	private function parseWhatsapp( $block ) {
-		$wrapper = $this->dom->createElement( 'div' );
+        if ($block->data->withBorder) {
+            $imgAttrs[] = "{$this->prefix}-image-border";
+        }
+        if ($block->data->withBackground) {
+            $imgAttrs[] = "{$this->prefix}-image-background";
+        }
+        if ($block->data->stretched) {
+            $imgAttrs[] = "{$this->prefix}-image-stretched";
+        }
 
-		$wrapper->setAttribute( 'class', "whatsapp-block" );
+        $img->setAttribute('src', $block->data->url);
+        $img->setAttribute('class', implode(' ', $imgAttrs));
 
-		$title = $this->dom->createElement( 'span', $block->data->title );
-		$title->setAttribute( 'class', 'whatsapp-warning-header' );
-		$content = $this->dom->createElement( 'span', $block->data->content);
-		$content->setAttribute( 'class', 'whatsapp-text' );
+        $figCaption = $this->dom->createElement('figcaption');
 
-		$wrapper->appendChild( $title );
-		$wrapper->appendChild( $content );
+        $figCaption->appendChild($this->html5->loadHTMLFragment($block->data->caption));
 
-		$this->dom->appendChild( $wrapper );
-	}
+        $figure->appendChild($img);
 
-	private function parseList( $block ) {
-		$wrapper = $this->dom->createElement( 'div' );
-		$wrapper->setAttribute( 'class', "{$this->prefix}-list" );
+        $figure->appendChild($figCaption);
 
-		$list = null;
+        $this->dom->appendChild($figure);
+    }
 
-		switch ( $block->data->style ) {
-			case 'ordered':
-				$list = $this->dom->createElement( 'ol' );
-				break;
-			default:
-				$list = $this->dom->createElement( 'ul' );
-				break;
-		}
+    private function parseFileImage($block)
+    {
 
-		foreach ( $block->data->items as $item ) {
-			$li = $this->dom->createElement( 'li' );
-			$li->appendChild( $this->html5->loadHTMLFragment( $item ) );
-			$list->appendChild( $li );
-		}
+        $alignmentWrap = $this->dom->createElement('div');
 
-		$wrapper->appendChild( $list );
+        switch ($block->tunes->alignment->alignment) {
+            case 'center':
+                $alignmentWrap->setAttribute('class', "flex justify-center");
+                break;
+            case 'left':
+                $alignmentWrap->setAttribute('class', "flex justify-start");
+                break;
+            case 'right':
+                $alignmentWrap->setAttribute('class', "flex justify-end");
+                break;
+            default:
+        }
 
-		$this->dom->appendChild( $wrapper );
-	}
+        $figure = $this->dom->createElement('figure');
 
-	private function parseWarning( $block ) {
-		$title   = new DOMText( $block->data->title );
-		$message = new DOMText( $block->data->message );
+        $figure->setAttribute('class', "{$this->prefix}-image");
 
-		$wrapper = $this->dom->createElement( 'div' );
-		$wrapper->setAttribute( 'class', "{$this->prefix}-warning" );
+        $img = $this->dom->createElement('img');
 
-		$textWrapper  = $this->dom->createElement( 'div' );
-		$titleWrapper = $this->dom->createElement( 'p' );
+        $imgAttrs = [];
 
-		$titleWrapper->appendChild( $title );
-		$messageWrapper = $this->dom->createElement( 'p' );
+        if ($block->data->withBorder) {
+            $imgAttrs[] = "{$this->prefix}-image-border";
+        }
+        if ($block->data->withBackground) {
+            $imgAttrs[] = "{$this->prefix}-image-background";
+        }
+        if ($block->data->stretched) {
+            $imgAttrs[] = "{$this->prefix}-image-stretched";
+        }
 
-		$messageWrapper->appendChild( $message );
+        $img->setAttribute('src', $block->data->file->url);
+        $img->setAttribute('class', implode(' ', $imgAttrs));
 
-		$textWrapper->appendChild( $titleWrapper );
-		$textWrapper->appendChild( $messageWrapper );
+        $figure->appendChild($img);
 
-		$icon = $this->dom->createElement( 'ion-icon' );
-		$icon->setAttribute( 'name', 'information-outline' );
-		$icon->setAttribute( 'size', 'large' );
+        if (!empty($block->data->caption)) {
+            $figCaption = $this->dom->createElement('figcaption');
+            $figCaption->appendChild($this->html5->loadHTMLFragment($block->data->caption));
+            $figure->appendChild($figCaption);
+        }
 
-		$wrapper->appendChild( $icon );
-		$wrapper->appendChild( $textWrapper );
-
-		$this->dom->appendChild( $wrapper );
-	}
-
-	private function parseImage( $block ) {
-		$figure = $this->dom->createElement( 'figure' );
-
-		$figure->setAttribute( 'class', "{$this->prefix}-image" );
-
-		$img = $this->dom->createElement( 'img' );
-
-		$imgAttrs = [];
-
-		if ( $block->data->withBorder ) {
-			$imgAttrs[] = "{$this->prefix}-image-border";
-		}
-		if ( $block->data->withBackground ) {
-			$imgAttrs[] = "{$this->prefix}-image-background";
-		}
-		if ( $block->data->stretched ) {
-			$imgAttrs[] = "{$this->prefix}-image-stretched";
-		}
-
-		$img->setAttribute( 'src', $block->data->url );
-		$img->setAttribute( 'class', implode( ' ', $imgAttrs ) );
-
-		$figCaption = $this->dom->createElement( 'figcaption' );
-
-		$figCaption->appendChild( $this->html5->loadHTMLFragment( $block->data->caption ) );
-
-		$figure->appendChild( $img );
-
-		$figure->appendChild( $figCaption );
-
-		$this->dom->appendChild( $figure );
-	}
-
-	private function parseFileImage( $block ) {
-
-		$alignmentWrap = $this->dom->createElement( 'div' );
-
-		switch ($block->tunes->alignment->alignment){
-			case 'center':
-				$alignmentWrap->setAttribute( 'class', "flex justify-center" );
-				break;
-			case 'left':
-				$alignmentWrap->setAttribute( 'class', "flex justify-start" );
-				break;
-			case 'right':
-				$alignmentWrap->setAttribute( 'class', "flex justify-end" );
-				break;
-			default:
-		}
-
-		$figure = $this->dom->createElement( 'figure' );
-
-		$figure->setAttribute( 'class', "{$this->prefix}-image" );
-
-		$img = $this->dom->createElement( 'img' );
-
-		$imgAttrs = [];
-
-		if ( $block->data->withBorder ) {
-			$imgAttrs[] = "{$this->prefix}-image-border";
-		}
-		if ( $block->data->withBackground ) {
-			$imgAttrs[] = "{$this->prefix}-image-background";
-		}
-		if ( $block->data->stretched ) {
-			$imgAttrs[] = "{$this->prefix}-image-stretched";
-		}
-
-		$img->setAttribute( 'src', $block->data->file->url );
-		$img->setAttribute( 'class', implode( ' ', $imgAttrs ) );
-
-		$figure->appendChild( $img );
-
-		if ( ! empty( $block->data->caption ) ) {
-			$figCaption = $this->dom->createElement( 'figcaption' );
-			$figCaption->appendChild( $this->html5->loadHTMLFragment( $block->data->caption ) );
-			$figure->appendChild( $figCaption );
-		}
-
-		$alignmentWrap->appendChild( $figure );
-		$this->dom->appendChild( $alignmentWrap );
-	}
+        $alignmentWrap->appendChild($figure);
+        $this->dom->appendChild($alignmentWrap);
+    }
 }
