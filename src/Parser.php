@@ -130,10 +130,13 @@ class Parser
                     break;
                 case 'whatsapp':
                     $this->parseWhatsapp($block);
+                    break;
                 case 'twitterembed':
                     $this->parseTwitterEmbed($block);
+                    break;
                 case 'pdf':
                     $this->parsePdf($block);
+                    break;
                 default:
                     break;
             }
